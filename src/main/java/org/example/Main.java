@@ -1,5 +1,7 @@
 package org.example;
 
+import com.sun.xml.internal.ws.util.StringUtils;
+
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
@@ -9,6 +11,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 public class Main {
     private static JTable table;
@@ -39,6 +42,13 @@ public class Main {
                         int column = e.getColumn();
                         String columnName = table.getColumnName(column);
                         String value = (String) table.getValueAt(row, column);
+                        if (!value.equals("brak danych") && columnName.equals("l. rdzeni")) {
+                            if (!isNumeric(value)) {
+                                JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
+                                table.setValueAt(data.get(row)[columnNamesToIndex(columnName)], row, column);
+                                return;
+                            }
+                        }
                         if (value.trim().isEmpty()) {
                             JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
                             table.setValueAt(data.get(row)[columnNamesToIndex(columnName)], row, column);
@@ -115,6 +125,14 @@ public class Main {
             }
         }
         return -1;
+    }
+
+    public static boolean isNumeric(String str) {
+        if (str == null) {
+            return false;
+        }
+        Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
+        return pattern.matcher(str).matches();
     }
 }
 
