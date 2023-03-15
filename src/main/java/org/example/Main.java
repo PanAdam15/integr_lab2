@@ -12,17 +12,20 @@ import java.util.ArrayList;
 
 public class Main {
     private static JTable table;
+
     private static DefaultTableModel tableModel;
+
     private static String[] columnNames = {"Producent", "Przekatna", "Rozdzielczosc", "Powierzchnia", "Dotyk", "Nazwa Proc", "l. rdzeni", "Taktowanie", "RAM", "Poj. dysku",
             "Rodzaj dysku", "Grafika", "VRAM", "System", "Napęd"};
+
     private static ArrayList<String[]> data = new ArrayList<>();
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Dane z pliku txt");
+        JFrame frame = new JFrame("Tabela z pliku txt - Adam Pankowski");
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setPreferredSize(new Dimension(1200, 500));
-        JButton importButton = new JButton("Importuj z pliku");
+        JButton importButton = new JButton("Importuj");
         importButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -36,6 +39,11 @@ public class Main {
                         int column = e.getColumn();
                         String columnName = table.getColumnName(column);
                         String value = (String) table.getValueAt(row, column);
+                        if (value.trim().isEmpty()) {
+                            JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
+                            table.setValueAt(data.get(row)[columnNamesToIndex(columnName)], row, column);
+                            return;
+                        }
                         data.get(row)[columnNamesToIndex(columnName)] = value;
                     }
                 });
@@ -46,11 +54,10 @@ public class Main {
             }
         });
 
-        JButton exportButton = new JButton("Eksportuj do pliku");
+        JButton exportButton = new JButton("Eksportuj");
         exportButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Read data from JTable and update ArrayList
                 for (int i = 0; i < tableModel.getRowCount(); i++) {
                     String[] row = new String[columnNames.length];
                     for (int j = 0; j < columnNames.length; j++) {
@@ -58,15 +65,13 @@ public class Main {
                     }
                     data.set(i, row);
                 }
-                try (BufferedWriter bw = new BufferedWriter(new FileWriter("katalog.txt"))) {
+                try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter("katalog.txt"))) {
                     for (String[] row : data) {
                         for (int i = 0; i < row.length; i++) {
-                            bw.write(row[i]);
-                            if (i != row.length - 1) {
-                                bw.write(";");
-                            }
+                            bufferedWriter.write(row[i]);
+                            bufferedWriter.write(";");
                         }
-                        bw.newLine();
+                        bufferedWriter.newLine();
                     }
                 } catch (IOException ex) {
                     ex.printStackTrace();
@@ -90,6 +95,11 @@ public class Main {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] row = line.split(";");
+                for (int i = 0; i < row.length; i++) {
+                    if (row[i].trim().isEmpty()) {
+                        row[i] = "brak danych";
+                    }
+                }
                 data.add(row);
             }
         } catch (IOException e) {
