@@ -2,7 +2,6 @@ package org.example;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.swing.*;
@@ -102,16 +101,16 @@ public class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 for (int i = 0; i < table.getRowCount(); i++) {
-                    String[] row = new String[columnNames.length];
-                    for (int j = 0; j < columnNames.length; j++) {
+                    String[] row = new String[table.getColumnCount()];
+                    for (int j = 0; j < table.getColumnCount(); j++) {
                         row[j] = (String) table.getValueAt(i, j);
                     }
                     data.set(i, row);
                 }
                 try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter("katalog.txt"))) {
                     for (String[] row : data) {
-                        for (int i = 0; i < row.length; i++) {
-                            bufferedWriter.write(row[i]);
+                        for (String s : row) {
+                            bufferedWriter.write(s);
                             bufferedWriter.write(";");
                         }
                         bufferedWriter.newLine();
@@ -126,8 +125,12 @@ public class Main {
         importButtonXML.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Object [][] dataXml = readXMLFile("katalog.xml");
-                tableModel = new DefaultTableModel(dataXml, columnNames);
+                data = readXMLFile("katalog.xml");
+                String[][] dataArray = new String[data.size()][];
+                for (int i = 0; i < data.size(); i++) {
+                    dataArray[i] = data.get(i);
+                }
+                tableModel = new DefaultTableModel(dataArray, columnNames);
                 table = new JTable(tableModel);
                 table.setFont(new Font("Courier", Font.BOLD, 10));
                 TableColumnModel columnModel = table.getColumnModel();
@@ -137,35 +140,35 @@ public class Main {
                 columnModel.getColumn(11).setMaxWidth(120);
                 columnModel.getColumn(14).setPreferredWidth(110);
                 columnModel.getColumn(13).setMaxWidth(110);
-//                table.getModel().addTableModelListener(new TableModelListener() {
-//                    @Override
-//                    public void tableChanged(TableModelEvent e) {
-//                        int row = e.getFirstRow();
-//                        int column = e.getColumn();
-//                        String columnName = table.getColumnName(column);
-//                        String value = (String) table.getValueAt(row, column);
-//                        if (columnName.equals("Powierzchnia")) {
-//                            if (!hasNoDigits(value)) {
-//                                JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
-//                                table.setValueAt(data.get(row)[column], row, column);
-//                                return;
-//                            }
-//                        }
-//                        if (!value.equals("brak danych") && columnName.equals("l. rdzeni")) {
-//                            if (!isNumeric(value)) {
-//                                JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
-//                                table.setValueAt(data.get(row)[column], row, column);
-//                                return;
-//                            }
-//                        }
-//                        if (value.trim().isEmpty()) {
-//                            JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
-//                            table.setValueAt(data.get(row)[column], row, column);
-//                            return;
-//                        }
-//                        data.get(row)[column] = value;
-//                    }
-//                });
+                table.getModel().addTableModelListener(new TableModelListener() {
+                    @Override
+                    public void tableChanged(TableModelEvent e) {
+                        int row = e.getFirstRow();
+                        int column = e.getColumn();
+                        String columnName = table.getColumnName(column);
+                        String value = (String) table.getValueAt(row, column);
+                        if (columnName.equals("Powierzchnia")) {
+                            if (!hasNoDigits(value)) {
+                                JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
+                                table.setValueAt(data.get(row)[column], row, column);
+                                return;
+                            }
+                        }
+                        if (!value.equals("brak danych") && columnName.equals("l. rdzeni")) {
+                            if (!isNumeric(value)) {
+                                JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
+                                table.setValueAt(data.get(row)[column], row, column);
+                                return;
+                            }
+                        }
+                        if (value.trim().isEmpty()) {
+                            JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
+                            table.setValueAt(data.get(row)[column], row, column);
+                            return;
+                        }
+                        data.get(row)[column] = value;
+                    }
+                });
                 JScrollPane scrollPane = new JScrollPane(table);
                 frame.add(scrollPane, BorderLayout.CENTER);
                 frame.pack();
@@ -300,15 +303,16 @@ public class Main {
         return data;
     }
 
-    private static String[][] readXMLFile(String filePath) {
+    private static ArrayList<String[]> readXMLFile(String filePath) {
         try {
+            ArrayList<String[]> data = new ArrayList<>();
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(filePath);
 
             NodeList laptopList = doc.getElementsByTagName("laptop");
 
-            String[][] data = new String[laptopList.getLength()][7];
+            //String[][] data = new String[laptopList.getLength()][7];
 
             for (int i = 0; i < laptopList.getLength(); i++) {
                 Element laptop = (Element) laptopList.item(i);
@@ -343,17 +347,17 @@ public class Main {
                 String os = laptop.getElementsByTagName("os").item(0).getTextContent();
                 String diskReader = laptop.getElementsByTagName("disc_reader").item(0).getTextContent();
 
-                data[i] = new String[]{id, manufacturer, screenSize,resolution,typeScreen, touchScreen,processor,cores,clockSpeed, ram, storage,diskType,graphicsCard,memory, os,diskReader};
+                String dataString[] = new String[]{id, manufacturer, screenSize,resolution,typeScreen, touchScreen,processor,cores,clockSpeed, ram, storage,diskType,graphicsCard,memory, os,diskReader};
+                data.add(dataString);
             }
 
             return data;
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
         return null;
     }
+
     public void importToXML(JTable table) {
         try {
             DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
