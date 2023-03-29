@@ -1,2 +1,2 @@
 1;Asus;12";1600x900;matowy;no;i7;8;3200;8GB;240GB;SSD;intel HD Graphics 4000;1GB;Windows 7 Home;Blu-Ray;
-2;Dell;16";1376x768;ff;yes;i5;4;;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;
+2;Dell;16";1376x768;brak danych;yes;i5;4;brak danych;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;
