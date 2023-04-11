@@ -38,6 +38,8 @@ public class Main {
 
     private static ArrayList<String[]> data = new ArrayList<>();
 
+    private static JScrollPane scrollPane, scrollPaneXml;
+
     public static void main(String[] args) {
         JFrame frame = new JFrame("Tabela z pliku txt - Adam Pankowski");
         frame.setLayout(new BorderLayout());
@@ -91,7 +93,10 @@ public class Main {
                         data.get(row)[column] = value;
                     }
                 });
-                JScrollPane scrollPane = new JScrollPane(table);
+                if(scrollPaneXml!=null){
+                    frame.remove(scrollPaneXml);
+                }
+                scrollPane = new JScrollPane(table);
                 frame.add(scrollPane, BorderLayout.CENTER);
                 frame.pack();
                 frame.setVisible(true);
@@ -173,8 +178,11 @@ public class Main {
                         data.get(row)[column] = value;
                     }
                 });
-                JScrollPane scrollPane = new JScrollPane(table);
-                frame.add(scrollPane, BorderLayout.CENTER);
+                if(scrollPane!= null){
+                    frame.remove(scrollPane);
+                }
+                scrollPaneXml = new JScrollPane(table);
+                frame.add(scrollPaneXml, BorderLayout.CENTER);
                 frame.pack();
                 frame.setVisible(true);
             }
