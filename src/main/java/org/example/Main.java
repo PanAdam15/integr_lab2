@@ -22,8 +22,12 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.regex.Pattern;
 
 import static org.example.FileUtils.*;
@@ -196,9 +200,11 @@ public class Main {
                     DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
                     DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
                     Document document = documentBuilder.newDocument();
-
                     Element laptops = document.createElement("laptops");
-                    laptops.setAttribute("moddate", String.valueOf(LocalDateTime.now()));
+                    LocalDateTime now = LocalDateTime.now();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 'T' HH:mm");
+                    String formatDateTime = now.format(formatter);
+                    laptops.setAttribute("moddate", formatDateTime);
                     document.appendChild(laptops);
 
                     for (int i = 0; i < table.getRowCount(); i++) {
@@ -268,6 +274,7 @@ public class Main {
 
                     StreamResult streamResult = new StreamResult(new File("katalog2.xml"));
                     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
                     transformer.setOutputProperty(OutputKeys.METHOD, "xml");
                     transformer.transform(domSource, streamResult);
                 } catch (ParserConfigurationException | TransformerException pce) {
@@ -288,7 +295,14 @@ public class Main {
     }
 
 
-
+    public static boolean hasNoDigits(String str) {
+        for (int i = 0; i < str.length(); i++) {
+            if (Character.isDigit(str.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 
 

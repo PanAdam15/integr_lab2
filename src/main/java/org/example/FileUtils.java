@@ -154,12 +154,4 @@ public class FileUtils {
         return pattern.matcher(str).matches();
     }
 
-    public static boolean hasNoDigits(String str) {
-        for (int i = 0; i < str.length(); i++) {
-            if (Character.isDigit(str.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
 }
