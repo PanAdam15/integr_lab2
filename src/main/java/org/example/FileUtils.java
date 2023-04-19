@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
@@ -144,6 +145,24 @@ public class FileUtils {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static ArrayList<String []> readFromDB(String[] columnNames) throws SQLException {
+        ArrayList<String[]> data = new ArrayList<>();
+        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/integrationdb", "root", "root");
+        String query = "SELECT * FROM laptops_table";
+        Statement stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery(query);
+        ResultSetMetaData metaData = rs.getMetaData();
+        int columns = columnNames.length;
+        while (rs.next()) {
+            String[] rowData = new String[columns];
+            for (int i = 1; i <= columns; i++) {
+                rowData[i - 1] =  rs.getString(i);
+            }
+            data.add(rowData);
+        }
+        return data;
     }
 
     public static boolean isNumeric(String str) {

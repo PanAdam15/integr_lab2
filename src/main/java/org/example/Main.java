@@ -29,6 +29,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,7 +43,10 @@ public class Main {
     private static String[] columnNames = {"", "Producent", "Przekatna", "Rozdzielczosc", "Powierzchnia", "Dotyk", "Nazwa Proc", "l. rdzeni", "Taktowanie", "RAM", "Poj. dysku",
             "Rodzaj dysku", "Grafika", "VRAM", "System", "Napęd"};
 
-    private static ArrayList<String[]> data = new ArrayList<>();
+    private static ArrayList<String[]> dataTxt = new ArrayList<>();
+    private static ArrayList<String[]> dataXml = new ArrayList<>();
+    private static ArrayList<String[]> dataDB = new ArrayList<>();
+    private static ArrayList<String[]> currentData = new ArrayList<>();
 
     private static JScrollPane scrollPane, scrollPaneXml, scrollPaneDB;
 
@@ -60,8 +64,9 @@ public class Main {
         importButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                data = readDataFromFile("katalog.txt");
-                tableModel = new DefaultTableModel(data.toArray(new String[0][0]), columnNames);
+                dataTxt = readDataFromFile("katalog.txt");
+                currentData = dataTxt;
+                tableModel = new DefaultTableModel(dataTxt.toArray(new String[0][0]), columnNames);
                 table = new JTable(tableModel);
                 setTableView(table);
 
@@ -75,23 +80,23 @@ public class Main {
                         if (columnName.equals("Powierzchnia")) {
                             if (!hasNoDigits(value)) {
                                 JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
-                                table.setValueAt(data.get(row)[column], row, column);
+                                table.setValueAt(dataTxt.get(row)[column], row, column);
                                 return;
                             }
                         }
                         if (!value.equals("brak danych") && columnName.equals("l. rdzeni")) {
                             if (!isNumeric(value)) {
                                 JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
-                                table.setValueAt(data.get(row)[column], row, column);
+                                table.setValueAt(dataTxt.get(row)[column], row, column);
                                 return;
                             }
                         }
                         if (value.trim().isEmpty()) {
                             JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
-                            table.setValueAt(data.get(row)[column], row, column);
+                            table.setValueAt(dataTxt.get(row)[column], row, column);
                             return;
                         }
-                        data.get(row)[column] = value;
+                        dataTxt.get(row)[column] = value;
                     }
                 });
                 removeScrollPanels(frame);
@@ -111,10 +116,10 @@ public class Main {
                     for (int j = 0; j < table.getColumnCount(); j++) {
                         row[j] = (String) table.getValueAt(i, j);
                     }
-                    data.set(i, row);
+                    dataTxt.set(i, row);
                 }
                 try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter("katalog.txt"))) {
-                    for (String[] row : data) {
+                    for (String[] row : dataTxt) {
                         for (String s : row) {
                             bufferedWriter.write(s);
                             bufferedWriter.write(";");
@@ -131,10 +136,11 @@ public class Main {
         importButtonXML.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                data = readXMLFile("katalog.xml");
-                String[][] dataArray = new String[data.size()][];
-                for (int i = 0; i < data.size(); i++) {
-                    dataArray[i] = data.get(i);
+                dataXml = readXMLFile("katalog.xml");
+                currentData = dataXml;
+                String[][] dataArray = new String[dataXml.size()][];
+                for (int i = 0; i < dataXml.size(); i++) {
+                    dataArray[i] = dataXml.get(i);
                 }
                 tableModel = new DefaultTableModel(dataArray, columnNames);
                 table = new JTable(tableModel);
@@ -149,25 +155,25 @@ public class Main {
                         if (columnName.equals("Powierzchnia")) {
                             if (!hasNoDigits(value)) {
                                 JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
-                                table.setValueAt(data.get(row)[column], row, column);
+                                table.setValueAt(dataXml.get(row)[column], row, column);
                                 return;
                             }
                         }
                         if (!value.equals("brak danych") && columnName.equals("l. rdzeni")) {
                             if (!isNumeric(value)) {
                                 JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
-                                table.setValueAt(data.get(row)[column], row, column);
+                                table.setValueAt(dataXml.get(row)[column], row, column);
                                 return;
                             }
                         }
                         if (value.trim().isEmpty()) {
                             JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
-                            if (!data.get(row)[column].isEmpty()) {
-                                table.setValueAt(data.get(row)[column], row, column);
+                            if (!dataXml.get(row)[column].isEmpty()) {
+                                table.setValueAt(dataXml.get(row)[column], row, column);
                             }
                             return;
                         }
-                        data.get(row)[column] = value;
+                        dataXml.get(row)[column] = value;
                     }
                 });
                 removeScrollPanels(frame);
@@ -310,70 +316,27 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     // Create the new JTable
-
-                    DefaultTableModel modelDB = new DefaultTableModel();
-
+                    dataDB = readFromDB(columnNames);
                     Set<Integer> rowsToHighlight = new HashSet<>();
-// Connect to the database
-                    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/integrationdb", "root", "root");
+                    int j = 0;
+                    for (String[] arr1 : currentData) {
 
-// Retrieve data from the database
-                    String query = "SELECT * FROM laptops_table";
-                    Statement stmt = conn.createStatement();
-                    ResultSet rs = stmt.executeQuery(query);
-
-// Get column names and add them to the new model
-                    ResultSetMetaData metaData = rs.getMetaData();
-                    int columnCount = metaData.getColumnCount();
-                    for (int i = 0; i < columnCount; i++) {
-                        modelDB.addColumn(columnNames[i]);
-                    }
-
-// Add data to the new model
-                    while (rs.next()) {
-                        Object[] rowData = new Object[columnCount];
-                        for (int i = 1; i <= columnCount; i++) {
-                            rowData[i - 1] = rs.getObject(i);
-                        }
-                        modelDB.addRow(rowData);
-                    }
-                    JTable tableDB = new JTable(modelDB);
-// Check for duplicated rows
-
-                    for (int k = 0; k < tableDB.getRowCount(); k++) {
-                        Object[] rowDataDB = new Object[tableDB.getColumnCount()];
-                        for (int l = 0; l < tableDB.getColumnCount(); l++) {
-                            rowDataDB[l] = tableDB.getValueAt(k, l);
-                            for (int i = 0; i < table.getRowCount(); i++) {
-                                Object[] rowData = new Object[table.getColumnCount()];
-                                for (int j = 0; j < table.getColumnCount(); j++) {
-                                    rowData[j] = table.getValueAt(i, j);
-                                    if (rowData[k] == rowDataDB[i]) {
-                                        rowsToHighlight.add(k);
-                                    }
-                                }
+                        for (String[] arr2 : dataDB) {
+                            if (Arrays.equals(arr1, arr2)) {
+                                // found a duplicate
+                                rowsToHighlight.add(j);
                             }
-
-
-                            // Highlight the row in the new JTable
-
                         }
+                        j++;
                     }
-                    //tableDB.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight));
-// Add the new JTable to the frame
+                    tableModel = new DefaultTableModel(dataDB.toArray(new String[0][0]), columnNames);
 
 
-// Highlight duplicate rows in the new JTable
+                    JTable tableDB = new JTable(tableModel);
                     tableDB.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight));
-
-                    for (int i = 0; i < tableDB.getRowCount(); i++) {
+                    for (int i = 0; i < table.getRowCount(); i++) {
                         if (rowsToHighlight.contains(i)) {
-                            for (int j = 0; j < tableDB.getColumnCount(); j++) {
-                                TableCellRenderer renderer = tableDB.getCellRenderer(i, j);
-                                Component component = tableDB.prepareRenderer(renderer, i, j);
-                                component.setBackground(Color.YELLOW);
-                                component.setForeground(Color.BLACK);
-                            }
+                            table.getCellRenderer(i, 0).getTableCellRendererComponent(table, null, true, false, i, 0);
                         }
                     }
                     setTableView(tableDB);
