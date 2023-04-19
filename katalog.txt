@@ -1,2 +1,4 @@
-1;Asus;12";1600x900;matowy;no;i7;8;3200;8GB;240GB;SSD;intel HD Graphics 4000;1GB;Windows 7 Home;Blu-Ray;
+12;Asusx;12"x;1600x900x;matowydx;nox;i7x;82;32002;8GBx;240GBx;SSDx;intel HD Graphics 4000x;1GBx;Windows 7 x;Blu-Rayx;
 2;Dell;16";1376x768;brak danych;yes;i5;4;brak danych;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;
+3;Delldd;16"dd;1376x768dd;brak danychdd;yesd;i5d;42;brak danycdh;16GBd;d120GB;brak dadnych;intel HD d 5000;2GBd;Windows Vistad;bradk;
+4;Dellfds;16";1376x768;brak danycfseh;yesfd;i5;4;brak danych;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;

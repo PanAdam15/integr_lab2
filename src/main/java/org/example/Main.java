@@ -2,12 +2,12 @@ package org.example;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,14 +21,16 @@ import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.regex.Pattern;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.example.FileUtils.*;
 
@@ -42,7 +44,7 @@ public class Main {
 
     private static ArrayList<String[]> data = new ArrayList<>();
 
-    private static JScrollPane scrollPane, scrollPaneXml;
+    private static JScrollPane scrollPane, scrollPaneXml, scrollPaneDB;
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Tabela z pliku txt - Adam Pankowski");
@@ -52,6 +54,8 @@ public class Main {
         JButton importButton = new JButton("Importuj");
         JButton importButtonXML = new JButton("Importuj z xml");
         JButton exportButtonXML = new JButton("Eskportuj do xml");
+        JButton importButtonDB = new JButton("Importuj z DB");
+        JButton exportButtonDB = new JButton("Eskportuj do DB");
 
         importButton.addActionListener(new ActionListener() {
             @Override
@@ -59,14 +63,7 @@ public class Main {
                 data = readDataFromFile("katalog.txt");
                 tableModel = new DefaultTableModel(data.toArray(new String[0][0]), columnNames);
                 table = new JTable(tableModel);
-                table.setFont(new Font("Courier", Font.BOLD, 10));
-                TableColumnModel columnModel = table.getColumnModel();
-                columnModel.getColumn(0).setPreferredWidth(15);
-                columnModel.getColumn(0).setMaxWidth(15);
-                columnModel.getColumn(12).setPreferredWidth(120);
-                columnModel.getColumn(11).setMaxWidth(120);
-                columnModel.getColumn(14).setPreferredWidth(110);
-                columnModel.getColumn(13).setMaxWidth(110);
+                setTableView(table);
 
                 table.getModel().addTableModelListener(new TableModelListener() {
                     @Override
@@ -97,9 +94,7 @@ public class Main {
                         data.get(row)[column] = value;
                     }
                 });
-                if(scrollPaneXml!=null){
-                    frame.remove(scrollPaneXml);
-                }
+                removeScrollPanels(frame);
                 scrollPane = new JScrollPane(table);
                 frame.add(scrollPane, BorderLayout.CENTER);
                 frame.pack();
@@ -143,14 +138,7 @@ public class Main {
                 }
                 tableModel = new DefaultTableModel(dataArray, columnNames);
                 table = new JTable(tableModel);
-                table.setFont(new Font("Courier", Font.BOLD, 10));
-                TableColumnModel columnModel = table.getColumnModel();
-                columnModel.getColumn(0).setPreferredWidth(15);
-                columnModel.getColumn(0).setMaxWidth(15);
-                columnModel.getColumn(12).setPreferredWidth(120);
-                columnModel.getColumn(11).setMaxWidth(120);
-                columnModel.getColumn(14).setPreferredWidth(110);
-                columnModel.getColumn(13).setMaxWidth(110);
+                setTableView(table);
                 table.getModel().addTableModelListener(new TableModelListener() {
                     @Override
                     public void tableChanged(TableModelEvent e) {
@@ -174,7 +162,7 @@ public class Main {
                         }
                         if (value.trim().isEmpty()) {
                             JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
-                            if(!data.get(row)[column].isEmpty()) {
+                            if (!data.get(row)[column].isEmpty()) {
                                 table.setValueAt(data.get(row)[column], row, column);
                             }
                             return;
@@ -182,9 +170,7 @@ public class Main {
                         data.get(row)[column] = value;
                     }
                 });
-                if(scrollPane!= null){
-                    frame.remove(scrollPane);
-                }
+                removeScrollPanels(frame);
                 scrollPaneXml = new JScrollPane(table);
                 frame.add(scrollPaneXml, BorderLayout.CENTER);
                 frame.pack();
@@ -283,11 +269,189 @@ public class Main {
                 JOptionPane.showMessageDialog(frame, "Dane zostały zapisane do pliku.");
             }
         });
+//        importButtonDB.addActionListener(new ActionListener() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+//                try {
+//                    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/integrationdb", "root", "root");
+//                    String query = "SELECT * FROM laptops_table";
+//                    Statement stmt = conn.createStatement();
+//                    ResultSet rs = stmt.executeQuery(query);
+//                    DefaultTableModel model = new DefaultTableModel();
+//                    ResultSetMetaData metaData = rs.getMetaData();
+//                    int columnCount = columnNames.length;
+//                    for (int i = 0; i < columnCount; i++) {
+//                        model.addColumn(columnNames[i]);
+//                    }
+//
+//                    while (rs.next()) {
+//                        Object[] rowData = new Object[columnCount];
+//                        for (int i = 1; i <= columnCount; i++) {
+//                            rowData[i - 1] = rs.getObject(i);
+//                        }
+//                        model.addRow(rowData);
+//                    }
+//
+//                    JTable tableDB = new JTable(model);
+//                    setTableView(tableDB);
+//                    removeScrollPanels(frame);
+//                    scrollPaneDB = new JScrollPane(tableDB);
+//                    frame.add(scrollPaneDB, BorderLayout.CENTER);
+//                    frame.pack();
+//                    frame.setVisible(true);
+//                } catch (SQLException ex) {
+//                    throw new RuntimeException(ex);
+//                }
+//
+//            }
+//        });
+        importButtonDB.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    // Create the new JTable
+
+                    DefaultTableModel modelDB = new DefaultTableModel();
+
+                    Set<Integer> rowsToHighlight = new HashSet<>();
+// Connect to the database
+                    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/integrationdb", "root", "root");
+
+// Retrieve data from the database
+                    String query = "SELECT * FROM laptops_table";
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery(query);
+
+// Get column names and add them to the new model
+                    ResultSetMetaData metaData = rs.getMetaData();
+                    int columnCount = metaData.getColumnCount();
+                    for (int i = 0; i < columnCount; i++) {
+                        modelDB.addColumn(columnNames[i]);
+                    }
+
+// Add data to the new model
+                    while (rs.next()) {
+                        Object[] rowData = new Object[columnCount];
+                        for (int i = 1; i <= columnCount; i++) {
+                            rowData[i - 1] = rs.getObject(i);
+                        }
+                        modelDB.addRow(rowData);
+                    }
+                    JTable tableDB = new JTable(modelDB);
+// Check for duplicated rows
+
+                    for (int k = 0; k < tableDB.getRowCount(); k++) {
+                        Object[] rowDataDB = new Object[tableDB.getColumnCount()];
+                        for (int l = 0; l < tableDB.getColumnCount(); l++) {
+                            rowDataDB[l] = tableDB.getValueAt(k, l);
+                            for (int i = 0; i < table.getRowCount(); i++) {
+                                Object[] rowData = new Object[table.getColumnCount()];
+                                for (int j = 0; j < table.getColumnCount(); j++) {
+                                    rowData[j] = table.getValueAt(i, j);
+                                    if (rowData[k] == rowDataDB[i]) {
+                                        rowsToHighlight.add(k);
+                                    }
+                                }
+                            }
+
+
+                            // Highlight the row in the new JTable
+
+                        }
+                    }
+                    //tableDB.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight));
+// Add the new JTable to the frame
+
+
+// Highlight duplicate rows in the new JTable
+                    tableDB.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight));
+
+                    for (int i = 0; i < tableDB.getRowCount(); i++) {
+                        if (rowsToHighlight.contains(i)) {
+                            for (int j = 0; j < tableDB.getColumnCount(); j++) {
+                                TableCellRenderer renderer = tableDB.getCellRenderer(i, j);
+                                Component component = tableDB.prepareRenderer(renderer, i, j);
+                                component.setBackground(Color.YELLOW);
+                                component.setForeground(Color.BLACK);
+                            }
+                        }
+                    }
+                    setTableView(tableDB);
+                    removeScrollPanels(frame);
+                    scrollPaneDB = new JScrollPane(tableDB);
+                    frame.add(scrollPaneDB, BorderLayout.CENTER);
+                    frame.pack();
+                    frame.setVisible(true);
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
+        exportButtonDB.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/integrationdb", "root", "root");
+                    DefaultTableModel model = (DefaultTableModel) table.getModel();
+                    Statement statement = conn.createStatement();
+                    String sql = "TRUNCATE TABLE laptops_table";
+                    statement.executeUpdate(sql);
+                    for (int i = 0; i < model.getRowCount(); i++) {
+                        String col1 = model.getValueAt(i, 0).toString();
+                        String col2 = model.getValueAt(i, 1).toString();
+                        String col3 = model.getValueAt(i, 2).toString();
+                        String col4 = model.getValueAt(i, 3).toString();
+                        String col5 = model.getValueAt(i, 4).toString();
+                        String col6 = model.getValueAt(i, 5).toString();
+                        String col7 = model.getValueAt(i, 6).toString();
+                        String col8 = model.getValueAt(i, 7).toString();
+                        String col9 = model.getValueAt(i, 8).toString();
+                        String col10 = model.getValueAt(i, 9).toString();
+                        String col11 = model.getValueAt(i, 10).toString();
+                        String col12 = model.getValueAt(i, 11).toString();
+                        String col13 = model.getValueAt(i, 12).toString();
+                        String col14 = model.getValueAt(i, 13).toString();
+                        String col15 = model.getValueAt(i, 14).toString();
+                        String col16 = model.getValueAt(i, 15).toString();
+
+                        String sql2 = "INSERT INTO laptops_table (id, Producent  ,  Przekatna  ,  Rozdzielczosc  ,  Powierzchnia  ,  Dotyk  ,  Nazwa_Proc  ,  l_rdzeni  ,  Taktowanie  ,  RAM  ,  Poj_dysku  ," +
+                                "             Rodzaj_dysku  ,  Grafika  ,  VRAM  ,  System_nazwa  ,  Napęd ) VALUES( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                        PreparedStatement stmt = conn.prepareStatement(sql2);
+
+                        stmt.setString(1, col1);
+                        stmt.setString(2, col2);
+                        stmt.setString(3, col3);
+                        stmt.setString(4, col4);
+                        stmt.setString(5, col5);
+                        stmt.setString(6, col6);
+                        stmt.setString(7, col7);
+                        stmt.setString(8, col8);
+                        stmt.setString(9, col9);
+                        stmt.setString(10, col10);
+                        stmt.setString(11, col11);
+                        stmt.setString(12, col12);
+                        stmt.setString(13, col13);
+                        stmt.setString(14, col14);
+                        stmt.setString(15, col15);
+                        stmt.setString(16, col16);
+
+                        stmt.executeUpdate();
+
+                    }
+                    conn.close();
+
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         buttonPanel.add(importButton);
         buttonPanel.add(exportButton);
         buttonPanel.add(importButtonXML);
         buttonPanel.add(exportButtonXML);
+        buttonPanel.add(importButtonDB);
+        buttonPanel.add(exportButtonDB);
 
         frame.add(buttonPanel, BorderLayout.NORTH);
         frame.pack();
@@ -304,7 +468,59 @@ public class Main {
         return true;
     }
 
+    public static void removeScrollPanels(Frame frame) {
+        if (scrollPane != null) {
+            frame.remove(scrollPane);
+        }
+        if (scrollPaneXml != null) {
+            frame.remove(scrollPaneXml);
+        }
+        if (scrollPaneDB != null) {
+            frame.remove(scrollPaneDB);
+        }
+    }
 
+    public static void setTableView(JTable table) {
+        table.setFont(new Font("Courier", Font.BOLD, 10));
+        TableColumnModel columnModel = table.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(15);
+        columnModel.getColumn(0).setMaxWidth(15);
+        columnModel.getColumn(12).setPreferredWidth(120);
+        columnModel.getColumn(11).setMaxWidth(120);
+        columnModel.getColumn(14).setPreferredWidth(110);
+        columnModel.getColumn(13).setMaxWidth(110);
+    }
+
+    // connect to the database
+//    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "user", "password");
+//
+//// iterate over the JTable rows
+//for (int i = 0; i < tableModel.getRowCount(); i++) {
+//        // get the values from the JTable row
+//        String col1 = (String) tableModel.getValueAt(i, 0);
+//        String col2 = (String) tableModel.getValueAt(i, 1);
+//        // execute the SELECT query
+//        String sql = "SELECT COUNT(*) FROM mytable WHERE col1 = ? AND col2 = ?";
+//        PreparedStatement pstmt = conn.prepareStatement(sql);
+//        pstmt.setString(1, col1);
+//        pstmt.setString(2, col2);
+//        ResultSet rs = pstmt.executeQuery();
+//        rs.next();
+//        int count = rs.getInt(1);
+//        // check if the row is a duplicate
+//        if (count > 0) {
+//            // increment the counter
+//            duplicates++;
+//            // set the background color of the JTable row to red
+//            table.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
+//                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+//                    final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+//                    c.setBackground(Color.RED);
+//                    return c;
+//                }
+//            });
+//        }
+//    }
 
 }
 
