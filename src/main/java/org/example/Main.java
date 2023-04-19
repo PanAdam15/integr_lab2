@@ -340,55 +340,56 @@ public class Main {
                     }
 
                     tableModel = new DefaultTableModel(dataDB.toArray(new String[0][0]), columnNames);
+                    table = new JTable(tableModel);
 
-
-                    JTable tableDB = new JTable(tableModel);
-
-
-                    tableDB.getModel().addTableModelListener(new TableModelListener() {
+                    table.getModel().addTableModelListener(new TableModelListener() {
                         @Override
                         public void tableChanged(TableModelEvent e) {
                             int row = e.getFirstRow();
                             int column = e.getColumn();
-                            String columnName = tableDB.getColumnName(column);
-                            String value = (String) tableDB.getValueAt(row, column);
-                            if (!Objects.equals(value, dataDB.get(row)[column])) {
-                                editedRows.add(row);
-                            }
+                            String columnName = table.getColumnName(column);
+                            String value = (String) table.getValueAt(row, column);
+
                             if (columnName.equals("Powierzchnia")) {
                                 if (!hasNoDigits(value)) {
                                     JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
-                                    tableDB.setValueAt(dataDB.get(row)[column], row, column);
+                                    table.setValueAt(dataDB.get(row)[column], row, column);
                                     return;
+                                }else if (!Objects.equals(value, dataDB.get(row)[column])) {
+                                    editedRows.add(row);
                                 }
-                            }
-                            if (!value.equals("brak danych") && columnName.equals("l. rdzeni")) {
+                            }else if (!value.equals("brak danych") && columnName.equals("l. rdzeni")) {
                                 if (!isNumeric(value)) {
                                     JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
-                                    tableDB.setValueAt(dataDB.get(row)[column], row, column);
+                                    table.setValueAt(dataDB.get(row)[column], row, column);
                                     return;
+                                }else if (!Objects.equals(value, dataDB.get(row)[column])) {
+                                    editedRows.add(row);
                                 }
-                            }
-                            if (value.trim().isEmpty()) {
+                            }else if (value.trim().isEmpty()) {
                                 JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
                                 if (!dataDB.get(row)[column].isEmpty()) {
-                                    tableDB.setValueAt(dataDB.get(row)[column], row, column);
+                                    table.setValueAt(dataDB.get(row)[column], row, column);
+                                }else if (!Objects.equals(value, dataDB.get(row)[column])) {
+                                    editedRows.add(row);
                                 }
                                 return;
+                            }else if (!Objects.equals(value, dataDB.get(row)[column])) {
+                                editedRows.add(row);
                             }
                             dataDB.get(row)[column] = value;
 
                         }
                     });
-                    tableDB.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight, editedRows));
+                    table.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight, editedRows));
                     for (int i = 0; i < table.getRowCount(); i++) {
                         if (rowsToHighlight.contains(i)) {
                             table.getCellRenderer(i, 0).getTableCellRendererComponent(table, null, true, false, i, 0);
                         }
                     }
-                    setTableView(tableDB);
+                    setTableView(table);
                     removeScrollPanels(frame);
-                    scrollPaneDB = new JScrollPane(tableDB);
+                    scrollPaneDB = new JScrollPane(table);
                     frame.add(scrollPaneDB, BorderLayout.CENTER);
                     frame.pack();
                     frame.setVisible(true);
@@ -404,27 +405,26 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/integrationdb", "root", "root");
-                    DefaultTableModel model = (DefaultTableModel) table.getModel();
                     Statement statement = conn.createStatement();
                     String sql = "TRUNCATE TABLE laptops_table";
                     statement.executeUpdate(sql);
-                    for (int i = 0; i < model.getRowCount(); i++) {
-                        String col1 = model.getValueAt(i, 0).toString();
-                        String col2 = model.getValueAt(i, 1).toString();
-                        String col3 = model.getValueAt(i, 2).toString();
-                        String col4 = model.getValueAt(i, 3).toString();
-                        String col5 = model.getValueAt(i, 4).toString();
-                        String col6 = model.getValueAt(i, 5).toString();
-                        String col7 = model.getValueAt(i, 6).toString();
-                        String col8 = model.getValueAt(i, 7).toString();
-                        String col9 = model.getValueAt(i, 8).toString();
-                        String col10 = model.getValueAt(i, 9).toString();
-                        String col11 = model.getValueAt(i, 10).toString();
-                        String col12 = model.getValueAt(i, 11).toString();
-                        String col13 = model.getValueAt(i, 12).toString();
-                        String col14 = model.getValueAt(i, 13).toString();
-                        String col15 = model.getValueAt(i, 14).toString();
-                        String col16 = model.getValueAt(i, 15).toString();
+                    for (int i = 0; i < table.getRowCount(); i++) {
+                        String col1 = table.getValueAt(i, 0).toString();
+                        String col2 = table.getValueAt(i, 1).toString();
+                        String col3 = table.getValueAt(i, 2).toString();
+                        String col4 = table.getValueAt(i, 3).toString();
+                        String col5 = table.getValueAt(i, 4).toString();
+                        String col6 = table.getValueAt(i, 5).toString();
+                        String col7 = table.getValueAt(i, 6).toString();
+                        String col8 = table.getValueAt(i, 7).toString();
+                        String col9 = table.getValueAt(i, 8).toString();
+                        String col10 = table.getValueAt(i, 9).toString();
+                        String col11 = table.getValueAt(i, 10).toString();
+                        String col12 = table.getValueAt(i, 11).toString();
+                        String col13 = table.getValueAt(i, 12).toString();
+                        String col14 = table.getValueAt(i, 13).toString();
+                        String col15 = table.getValueAt(i, 14).toString();
+                        String col16 = table.getValueAt(i, 15).toString();
 
                         String sql2 = "INSERT INTO laptops_table (id, Producent  ,  Przekatna  ,  Rozdzielczosc  ,  Powierzchnia  ,  Dotyk  ,  Nazwa_Proc  ,  l_rdzeni  ,  Taktowanie  ,  RAM  ,  Poj_dysku  ," +
                                 "             Rodzaj_dysku  ,  Grafika  ,  VRAM  ,  System_nazwa  ,  Napęd ) VALUES( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
