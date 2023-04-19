@@ -1,2 +1,6 @@
 1;Asus;12";1600x900;matowy;noff;i7;8;3200;8GB;240GB;SSD;intel HD Graphics 4000;1GB;Windows 7 Home;Blu-Ray;
 2;Dell;16";1376x768;brak danychvc;yes;i5;4;brak danych;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;
+3;Dell;16";1376x768;brak fsd;yes;i5;4;brak danych;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;
+4;Dell;16";1376x768;fsd;yes;i5;4;brak danych;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;
+5;Dell;16";1376x768;fsd danychvc;yes;i5;4;brak danych;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;
+6;Acer;16";1376x768;brak danychvc;yes;i5;4;brak danych;16GB;120GB;brak danych;intel HD Graphics 5000;2GB;Windows Vista;brak;

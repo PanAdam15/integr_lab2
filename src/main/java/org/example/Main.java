@@ -7,7 +7,6 @@ import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -28,10 +27,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static org.example.FileUtils.*;
 
@@ -65,10 +61,20 @@ public class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 dataTxt = readDataFromFile("katalog.txt");
-                currentData = dataTxt;
+                Set<Integer> rowsToHighlight = new HashSet<>();
+                Set<Integer> editedRows = new HashSet<>();
+                int j = 0;
+                for (String[] arr1 : currentData) {
+
+                    for (String[] arr2 : dataTxt) {
+                        if (Arrays.equals(arr1, arr2)) {
+                            rowsToHighlight.add(j);
+                        }
+                    }
+                    j++;
+                }
                 tableModel = new DefaultTableModel(dataTxt.toArray(new String[0][0]), columnNames);
                 table = new JTable(tableModel);
-                setTableView(table);
 
                 table.getModel().addTableModelListener(new TableModelListener() {
                     @Override
@@ -77,6 +83,9 @@ public class Main {
                         int column = e.getColumn();
                         String columnName = table.getColumnName(column);
                         String value = (String) table.getValueAt(row, column);
+                        if (!Objects.equals(value, dataTxt.get(row)[column])) {
+                            editedRows.add(row);
+                        }
                         if (columnName.equals("Powierzchnia")) {
                             if (!hasNoDigits(value)) {
                                 JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
@@ -99,11 +108,22 @@ public class Main {
                         dataTxt.get(row)[column] = value;
                     }
                 });
+                table.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight, editedRows));
+                for (int i = 0; i < table.getRowCount(); i++) {
+                    if (rowsToHighlight.contains(i)) {
+                        table.getCellRenderer(i, 0).getTableCellRendererComponent(table, null, true, false, i, 0);
+                    }
+
+                }
+                setTableView(table);
+
                 removeScrollPanels(frame);
                 scrollPane = new JScrollPane(table);
                 frame.add(scrollPane, BorderLayout.CENTER);
                 frame.pack();
                 frame.setVisible(true);
+                JOptionPane.showMessageDialog(frame, "Znalazłem " + (dataTxt.size() - rowsToHighlight.size()) + " nowe rekordy, pozostałe " + rowsToHighlight.size() + " to duplikaty");
+                currentData = dataTxt;
             }
         });
 
@@ -137,14 +157,25 @@ public class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 dataXml = readXMLFile("katalog.xml");
-                currentData = dataXml;
+                Set<Integer> rowsToHighlight = new HashSet<>();
+                Set<Integer> editedRows = new HashSet<>();
+                int j = 0;
+                for (String[] arr1 : currentData) {
+
+                    for (String[] arr2 : dataXml) {
+                        if (Arrays.equals(arr1, arr2)) {
+                            rowsToHighlight.add(j);
+                        }
+                    }
+                    j++;
+                }
                 String[][] dataArray = new String[dataXml.size()][];
                 for (int i = 0; i < dataXml.size(); i++) {
                     dataArray[i] = dataXml.get(i);
                 }
                 tableModel = new DefaultTableModel(dataArray, columnNames);
                 table = new JTable(tableModel);
-                setTableView(table);
+
                 table.getModel().addTableModelListener(new TableModelListener() {
                     @Override
                     public void tableChanged(TableModelEvent e) {
@@ -152,6 +183,9 @@ public class Main {
                         int column = e.getColumn();
                         String columnName = table.getColumnName(column);
                         String value = (String) table.getValueAt(row, column);
+                        if (!Objects.equals(value, dataXml.get(row)[column])) {
+                            editedRows.add(row);
+                        }
                         if (columnName.equals("Powierzchnia")) {
                             if (!hasNoDigits(value)) {
                                 JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
@@ -174,13 +208,23 @@ public class Main {
                             return;
                         }
                         dataXml.get(row)[column] = value;
+
                     }
                 });
+                table.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight, editedRows));
+                for (int i = 0; i < table.getRowCount(); i++) {
+                    if (rowsToHighlight.contains(i)) {
+                        table.getCellRenderer(i, 0).getTableCellRendererComponent(table, null, true, false, i, 0);
+                    }
+                }
+                setTableView(table);
                 removeScrollPanels(frame);
                 scrollPaneXml = new JScrollPane(table);
                 frame.add(scrollPaneXml, BorderLayout.CENTER);
                 frame.pack();
                 frame.setVisible(true);
+                JOptionPane.showMessageDialog(frame, "Znalazłem " + (dataXml.size() - rowsToHighlight.size()) + " nowe rekordy, pozostałe " + rowsToHighlight.size() + " to duplikaty");
+                currentData = dataXml;
             }
 
 
@@ -275,42 +319,7 @@ public class Main {
                 JOptionPane.showMessageDialog(frame, "Dane zostały zapisane do pliku.");
             }
         });
-//        importButtonDB.addActionListener(new ActionListener() {
-//            @Override
-//            public void actionPerformed(ActionEvent e) {
-//                try {
-//                    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/integrationdb", "root", "root");
-//                    String query = "SELECT * FROM laptops_table";
-//                    Statement stmt = conn.createStatement();
-//                    ResultSet rs = stmt.executeQuery(query);
-//                    DefaultTableModel model = new DefaultTableModel();
-//                    ResultSetMetaData metaData = rs.getMetaData();
-//                    int columnCount = columnNames.length;
-//                    for (int i = 0; i < columnCount; i++) {
-//                        model.addColumn(columnNames[i]);
-//                    }
-//
-//                    while (rs.next()) {
-//                        Object[] rowData = new Object[columnCount];
-//                        for (int i = 1; i <= columnCount; i++) {
-//                            rowData[i - 1] = rs.getObject(i);
-//                        }
-//                        model.addRow(rowData);
-//                    }
-//
-//                    JTable tableDB = new JTable(model);
-//                    setTableView(tableDB);
-//                    removeScrollPanels(frame);
-//                    scrollPaneDB = new JScrollPane(tableDB);
-//                    frame.add(scrollPaneDB, BorderLayout.CENTER);
-//                    frame.pack();
-//                    frame.setVisible(true);
-//                } catch (SQLException ex) {
-//                    throw new RuntimeException(ex);
-//                }
-//
-//            }
-//        });
+
         importButtonDB.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -318,22 +327,60 @@ public class Main {
                     // Create the new JTable
                     dataDB = readFromDB(columnNames);
                     Set<Integer> rowsToHighlight = new HashSet<>();
+                    Set<Integer> editedRows = new HashSet<>();
                     int j = 0;
                     for (String[] arr1 : currentData) {
 
                         for (String[] arr2 : dataDB) {
                             if (Arrays.equals(arr1, arr2)) {
-                                // found a duplicate
                                 rowsToHighlight.add(j);
                             }
                         }
                         j++;
                     }
+
                     tableModel = new DefaultTableModel(dataDB.toArray(new String[0][0]), columnNames);
 
 
                     JTable tableDB = new JTable(tableModel);
-                    tableDB.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight));
+
+
+                    tableDB.getModel().addTableModelListener(new TableModelListener() {
+                        @Override
+                        public void tableChanged(TableModelEvent e) {
+                            int row = e.getFirstRow();
+                            int column = e.getColumn();
+                            String columnName = tableDB.getColumnName(column);
+                            String value = (String) tableDB.getValueAt(row, column);
+                            if (!Objects.equals(value, dataDB.get(row)[column])) {
+                                editedRows.add(row);
+                            }
+                            if (columnName.equals("Powierzchnia")) {
+                                if (!hasNoDigits(value)) {
+                                    JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
+                                    tableDB.setValueAt(dataDB.get(row)[column], row, column);
+                                    return;
+                                }
+                            }
+                            if (!value.equals("brak danych") && columnName.equals("l. rdzeni")) {
+                                if (!isNumeric(value)) {
+                                    JOptionPane.showMessageDialog(frame, "Nieprawidłowa wartość");
+                                    tableDB.setValueAt(dataDB.get(row)[column], row, column);
+                                    return;
+                                }
+                            }
+                            if (value.trim().isEmpty()) {
+                                JOptionPane.showMessageDialog(frame, "Nie można zapisać pustych danych.");
+                                if (!dataDB.get(row)[column].isEmpty()) {
+                                    tableDB.setValueAt(dataDB.get(row)[column], row, column);
+                                }
+                                return;
+                            }
+                            dataDB.get(row)[column] = value;
+
+                        }
+                    });
+                    tableDB.setDefaultRenderer(Object.class, new MyTableCellRenderer(rowsToHighlight, editedRows));
                     for (int i = 0; i < table.getRowCount(); i++) {
                         if (rowsToHighlight.contains(i)) {
                             table.getCellRenderer(i, 0).getTableCellRendererComponent(table, null, true, false, i, 0);
@@ -345,6 +392,8 @@ public class Main {
                     frame.add(scrollPaneDB, BorderLayout.CENTER);
                     frame.pack();
                     frame.setVisible(true);
+                    JOptionPane.showMessageDialog(frame, "Znalazłem " + (dataDB.size() - rowsToHighlight.size()) + " nowe rekordy, pozostałe " + rowsToHighlight.size() + " to duplikaty");
+                    currentData = dataDB;
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -453,37 +502,6 @@ public class Main {
         columnModel.getColumn(14).setPreferredWidth(110);
         columnModel.getColumn(13).setMaxWidth(110);
     }
-
-    // connect to the database
-//    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "user", "password");
-//
-//// iterate over the JTable rows
-//for (int i = 0; i < tableModel.getRowCount(); i++) {
-//        // get the values from the JTable row
-//        String col1 = (String) tableModel.getValueAt(i, 0);
-//        String col2 = (String) tableModel.getValueAt(i, 1);
-//        // execute the SELECT query
-//        String sql = "SELECT COUNT(*) FROM mytable WHERE col1 = ? AND col2 = ?";
-//        PreparedStatement pstmt = conn.prepareStatement(sql);
-//        pstmt.setString(1, col1);
-//        pstmt.setString(2, col2);
-//        ResultSet rs = pstmt.executeQuery();
-//        rs.next();
-//        int count = rs.getInt(1);
-//        // check if the row is a duplicate
-//        if (count > 0) {
-//            // increment the counter
-//            duplicates++;
-//            // set the background color of the JTable row to red
-//            table.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
-//                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-//                    final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-//                    c.setBackground(Color.RED);
-//                    return c;
-//                }
-//            });
-//        }
-//    }
 
 }
 
